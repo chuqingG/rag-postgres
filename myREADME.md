@@ -16,3 +16,5 @@ CREATE EXTENSION IF NOT EXISTS vector;
 
 
 ```
+
+Before build the frontend, the node version need to >= 18.0.0
