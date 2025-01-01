@@ -16,6 +16,16 @@ from fastapi_app.api_models import (
     RetrievalResponse,
     RetrievalResponseDelta,
 )
+
+from fastapi_app.api_models import (
+    AIChatRoles,
+    Message,
+    RAGContext,
+    RetrievalResponse,
+    RetrievalResponseDelta,
+    ThoughtStep,
+)
+
 from fastapi_app.dependencies import ChatClient, CommonDeps, DBSession, EmbeddingsClient
 from fastapi_app.postgres_models import Item
 from fastapi_app.postgres_searcher import PostgresSearcher
@@ -94,6 +104,20 @@ async def search_handler(
     return [ItemPublic.model_validate(item.to_dict()) for item in results]
 
 
+async def myanswer(
+    ) -> RetrievalResponse:
+        
+        # myresult = [{'id': 1, 'content': "111"}, {'id': 2, 'content': "222"}]
+        return RetrievalResponse(
+            message=Message(
+                content="TESTTESTTEST", role=AIChatRoles.ASSISTANT
+            ),
+            context=RAGContext(
+                data_points={},
+                thoughts= [],
+            ),
+        )
+
 @router.post("/chat", response_model=Union[RetrievalResponse, ErrorResponse])
 async def chat_handler(
     context: CommonDeps,
@@ -133,10 +157,41 @@ async def chat_handler(
         response = await rag_flow.answer(
             chat_params=chat_params, contextual_messages=contextual_messages, results=results, earlier_thoughts=thoughts
         )
+        
         return response
+
     except Exception as e:
         return {"error": str(e)}
 
+async def mystream_answer():
+    myresult = [{'id': 1, 'content': "111"}, {'id': 2, 'content': "222"}]
+    # r = RetrievalResponse(
+    #     message=Message(
+    #         content="TESTTESTTEST", role=AIChatRoles.ASSISTANT
+    #     ),
+    #     context=RAGContext(
+    #         data_points={},
+    #         thoughts= [],
+    #     ),
+    # )
+    yield RetrievalResponseDelta(
+            context=RAGContext(
+                data_points={item['id']: item for item in myresult},
+                thoughts= [
+                    ThoughtStep(
+                        title="thought title",
+                        description="thought description",
+                        props=(
+                            {"model": "chat model"}
+                        ),
+                    ),
+                ],
+            ),
+        )
+    yield RetrievalResponseDelta(
+        delta=Message(content="TEST" * 10, role=AIChatRoles.ASSISTANT)
+    )
+    return
 
 @router.post("/chat/stream")
 async def chat_stream_handler(
@@ -146,38 +201,39 @@ async def chat_stream_handler(
     openai_chat: ChatClient,
     chat_request: ChatRequest,
 ):
-    searcher = PostgresSearcher(
-        db_session=database_session,
-        openai_embed_client=openai_embed.client,
-        embed_deployment=context.openai_embed_deployment,
-        embed_model=context.openai_embed_model,
-        embed_dimensions=context.openai_embed_dimensions,
-        embedding_column=context.embedding_column,
-    )
+    # searcher = PostgresSearcher(
+    #     db_session=database_session,
+    #     openai_embed_client=openai_embed.client,
+    #     embed_deployment=context.openai_embed_deployment,
+    #     embed_model=context.openai_embed_model,
+    #     embed_dimensions=context.openai_embed_dimensions,
+    #     embedding_column=context.embedding_column,
+    # )
 
-    rag_flow: Union[SimpleRAGChat, AdvancedRAGChat]
-    if chat_request.context.overrides.use_advanced_flow:
-        rag_flow = AdvancedRAGChat(
-            searcher=searcher,
-            openai_chat_client=openai_chat.client,
-            chat_model=context.openai_chat_model,
-            chat_deployment=context.openai_chat_deployment,
-        )
-    else:
-        rag_flow = SimpleRAGChat(
-            searcher=searcher,
-            openai_chat_client=openai_chat.client,
-            chat_model=context.openai_chat_model,
-            chat_deployment=context.openai_chat_deployment,
-        )
+    # rag_flow: Union[SimpleRAGChat, AdvancedRAGChat]
+    # if chat_request.context.overrides.use_advanced_flow:
+    #     rag_flow = AdvancedRAGChat(
+    #         searcher=searcher,
+    #         openai_chat_client=openai_chat.client,
+    #         chat_model=context.openai_chat_model,
+    #         chat_deployment=context.openai_chat_deployment,
+    #     )
+    # else:
+    #     rag_flow = SimpleRAGChat(
+    #         searcher=searcher,
+    #         openai_chat_client=openai_chat.client,
+    #         chat_model=context.openai_chat_model,
+    #         chat_deployment=context.openai_chat_deployment,
+    #     )
 
-    chat_params = rag_flow.get_params(chat_request.messages, chat_request.context.overrides)
+    # chat_params = rag_flow.get_params(chat_request.messages, chat_request.context.overrides)
 
-    # Intentionally do this before we stream down a response, to avoid using database connections during stream
-    # See https://github.com/tiangolo/fastapi/discussions/11321
-    contextual_messages, results, thoughts = await rag_flow.prepare_context(chat_params)
+    # # Intentionally do this before we stream down a response, to avoid using database connections during stream
+    # # See https://github.com/tiangolo/fastapi/discussions/11321
+    # contextual_messages, results, thoughts = await rag_flow.prepare_context(chat_params)
 
-    result = rag_flow.answer_stream(
-        chat_params=chat_params, contextual_messages=contextual_messages, results=results, earlier_thoughts=thoughts
-    )
+    # result = rag_flow.answer_stream(
+    #     chat_params=chat_params, contextual_messages=contextual_messages, results=results, earlier_thoughts=thoughts
+    # )
+    result = mystream_answer()
     return StreamingResponse(content=format_as_ndjson(result), media_type="application/x-ndjson")

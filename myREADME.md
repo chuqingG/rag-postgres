@@ -14,7 +14,17 @@ sudo apt install postgresql-16-pgvector
 
 CREATE EXTENSION IF NOT EXISTS vector;
 
-
 ```
 
 Before build the frontend, the node version need to >= 18.0.0
+
+Main starting steps:
+```bash
+# backend 
+python -m uvicorn fastapi_app:create_app --factory --reload
+
+# frontend
+cd src/frontend
+npm run dev
+```
+only need to rerun when changing the frontend

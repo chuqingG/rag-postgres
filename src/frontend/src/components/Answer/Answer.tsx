@@ -30,6 +30,7 @@ export const Answer = ({
     showFollowupQuestions
 }: Props) => {
     const followupQuestions = answer.context.followup_questions;
+    // const followupQuestions = "test next question";
     const messageContent = answer.message.content;
     const parsedAnswer = useMemo(() => parseAnswerToHtml(messageContent, isStreaming, onCitationClicked), [answer]);
 
@@ -62,18 +63,18 @@ export const Answer = ({
                     <Stack horizontal wrap tokens={{ childrenGap: 5 }}>
                         <span className={styles.citationLearnMore}>References:</span>
                         <ol>
-                        {parsedAnswer.citations.map((rowId, ind) => {
-                            const citation = answer.context.data_points[rowId];
-                            if (!citation) return null;
-                            return (
-                                <li key={rowId}>
-                                    <h4>{citation.name}</h4>
-                                    <p className={styles.referenceMetadata}>Brand: {citation.brand}</p>
-                                    <p className={styles.referenceMetadata}>Price: {citation.price}</p>
-                                    <p>{citation.description}</p>
-                                </li>
-                            );
-                        })}
+                            {parsedAnswer.citations.map((rowId, ind) => {
+                                const citation = answer.context.data_points[rowId];
+                                if (!citation) return null;
+                                return (
+                                    <li key={rowId}>
+                                        <h4>{citation.name}</h4>
+                                        <p className={styles.referenceMetadata}>Brand: {citation.brand}</p>
+                                        <p className={styles.referenceMetadata}>Price: {citation.price}</p>
+                                        <p>{citation.description}</p>
+                                    </li>
+                                );
+                            })}
                         </ol>
                     </Stack>
                 </Stack.Item>
